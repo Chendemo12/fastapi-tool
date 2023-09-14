@@ -83,9 +83,11 @@ func (s *Schedule) Do() {
 	defer close(done)
 
 	go func() {
+		defer func() { recover() }()
 		err := s.job.Do(ctx)
 		done <- struct{}{} // 任务执行完毕
 
+		// 对于任务超时,不应再触发 WhenError 执行错误回调
 		if err != nil { // 此次任务执行发生错误
 			s.output(s.logger.Warn, fmt.Sprintf("'%s' error occur: %s", s.job.String(), err.Error()))
 			s.job.WhenError(err)
